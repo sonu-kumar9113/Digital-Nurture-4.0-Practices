@@ -1,46 +1,41 @@
-CREATE OR REPLACE PROCEDURE TransferFunds(
-    source_account_id IN Accounts.AccountID%TYPE,
-    target_account_id IN Accounts.AccountID%TYPE,
-    transfer_amount IN NUMBER
-) IS
-    source_balance Accounts.Balance%TYPE;
+CREATE OR REPLACE PROCEDURE TransferFunds (
+	src_account IN NUMBER,
+	dest_account IN NUMBER,
+	funds IN NUMBER
+) IS 
+	src_balance NUMBER;
 BEGIN
-    SELECT Balance
-    INTO source_balance
-    FROM Accounts
-    WHERE AccountID = source_account_id
-    FOR UPDATE;
+	SELECT BALANCE INTO src_balance
+	FROM ACCOUNTS
+	WHERE ACCOUNTID = src_account
+	FOR UPDATE;
 
-    IF source_balance < transfer_amount THEN
-        RAISE_APPLICATION_ERROR(-20001, 'Insufficient balance in source account.');
-    END IF;
+	IF src_balance < funds THEN
+		RAISE_APPLICATION_ERROR(-20001, 'INSUFFICIENT BALANCE IN THE SOURCE ACCOUNT!');
+	END IF;
 
-    UPDATE Accounts
-    SET Balance = Balance - transfer_amount
-    WHERE AccountID = source_account_id;
+	UPDATE ACCOUNTS
+	SET BALANCE = BALANCE - funds
+	WHERE ACCOUNTID = src_account;
 
-    UPDATE Accounts
-    SET Balance = Balance + transfer_amount
-    WHERE AccountID = target_account_id;
+	UPDATE ACCOUNTS
+	SET BALANCE = BALANCE + funds
+	WHERE ACCOUNTID = dest_account;
 
-    COMMIT;
+	COMMIT;
+	DBMS_OUTPUT.PUT_LINE('Transfer of ' || funds || ' from account ' || src_account || ' to account ' || dest_account || ' completed.');
 
-    DBMS_OUTPUT.PUT_LINE('Funds transferred successfully: ' ||
-                         'From AccountID ' || source_account_id || 
-                         ' To AccountID ' || target_account_id ||
-                         ' Amount ' || transfer_amount);
-    
 EXCEPTION
-    WHEN NO_DATA_FOUND THEN
-        DBMS_OUTPUT.PUT_LINE('One or both account IDs do not exist.');
-    WHEN OTHERS THEN
-        ROLLBACK;
-        DBMS_OUTPUT.PUT_LINE('Error: ' || SQLERRM);
+	WHEN NO_DATA_FOUND THEN
+		RAISE_APPLICATION_ERROR(-20001, 'One or both accounts not found.');
+
+	WHEN OTHERS THEN
+		ROLLBACK;
+		RAISE;
+
 END;
 /
+
 BEGIN
-  TransferFunds(source_account_id => 1, 
-                target_account_id => 2, 
-                transfer_amount => 500);
+    TransferFunds(src_account => 1, dest_account => 2, funds => 500);
 END;
-/
