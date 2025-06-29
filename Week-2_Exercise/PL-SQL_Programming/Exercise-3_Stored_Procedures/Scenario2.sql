@@ -1,48 +1,22 @@
-CREATE OR REPLACE PROCEDURE UpdateEmployeeBonus(
-    bonus IN INT,
-    dept IN VARCHAR2
-) 
-AS
+CREATE OR REPLACE PROCEDURE UpdateEmployeeBonus (
+	dept_name IN VARCHAR2,
+	bonus_percent IN NUMBER
+) IS
 BEGIN
-    UPDATE Employees
-    SET Salary = Salary + (Salary * (bonus / 100))
-    WHERE Department = dept;
+	FOR RECORD IN (
+		SELECT EMPLOYEEID FROM EMPLOYEES
+		WHERE DEPARTMENT = dept_name
+		FOR UPDATE
+	) LOOP
+		UPDATE EMPLOYEES
+		SET SALARY = SALARY + SALARY * (bonus_percent/100)
+		WHERE EMPLOYEEID = RECORD.EMPLOYEEID;
+	END LOOP;
 
-    COMMIT;
+	DBMS_OUTPUT.PUT_LINE('Bonus added to ' || dept_name || ' Employees!');
 END;
 /
 
 BEGIN
-    UpdateEmployeeBonus(10, 'IT');
+	UpdateEmployeeBonus(dept_name => 'IT', bonus_percent => 10);
 END;
-/
-DECLARE
-    CURSOR emp_cursor IS
-        SELECT EmployeeID, Name, Position, Salary, Department, HireDate
-        FROM Employees
-        WHERE Department = 'IT'; -- Replace 'IT' with the department you want to check
-
-    emp_rec emp_cursor%ROWTYPE;
-BEGIN
-    -- Call the procedure
-    UpdateEmployeeBonus(10, 'IT');
-
-    -- Open the cursor
-    OPEN emp_cursor;
-    
-    -- Loop through the cursor and display the updated data
-    LOOP
-        FETCH emp_cursor INTO emp_rec;
-        EXIT WHEN emp_cursor%NOTFOUND;
-        DBMS_OUTPUT.PUT_LINE('EmployeeID: ' || emp_rec.EmployeeID || 
-                             ', Name: ' || emp_rec.Name || 
-                             ', Position: ' || emp_rec.Position || 
-                             ', Salary: ' || emp_rec.Salary || 
-                             ', Department: ' || emp_rec.Department || 
-                             ', HireDate: ' || emp_rec.HireDate);
-    END LOOP;
-    
-    -- Close the cursor
-    CLOSE emp_cursor;
-END;
-/
